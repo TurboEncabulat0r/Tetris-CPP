@@ -1,0 +1,5 @@
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(513,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (WindowsProject1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  tetris.cpp
+C:\Users\poop1\OneDrive\Desktop\tetriscpp\tetriscpp\Tetriscpp\engine.h(3,1): warning C4005: 'UNICODE': macro redefinition
+C:\Users\poop1\OneDrive\Desktop\tetriscpp\tetriscpp\Tetriscpp\tetris.cpp : message : see previous definition of 'UNICODE'
+  tetriscpp.vcxproj -> C:\Users\poop1\OneDrive\Desktop\tetriscpp\tetriscpp\Tetriscpp\Debug\tetriscpp.exe
