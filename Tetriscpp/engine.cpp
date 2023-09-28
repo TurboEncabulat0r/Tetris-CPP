@@ -27,12 +27,13 @@ void ClearScreen(u32 Color) {
 void DrawRectangle(int RectangleX, int RectangleY, int RectangleWidth, int RectangleHeight, u32 Color) {
     u32* Pixel = (u32*)BitmapMemory;
     Pixel += RectangleY * BitmapWidth + RectangleX;
-    if (RectangleY < 0)
+    if (RectangleY < 0 || RectangleX < 0)
         return;
+    
     for (int Y = 0; Y < RectangleHeight; ++Y) {
         for (int X = 0; X < RectangleWidth; ++X) {     
             
-
+            
             *Pixel++ = Color;
         }
         Pixel += BitmapWidth - RectangleWidth;
@@ -173,11 +174,13 @@ int WINAPI wWinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PWSTR CmdLine, i
 
     tetris::setup();
 
-    int winSize = 1000;
+    int winsize[2] = {0, 0};
+    tetris::getWindowSize(winsize);
+
     HWND Window = CreateWindowEx(0, ClassName, L"Tetris",
         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT,
-        winSize / 2, winSize,
+        winsize[0], winsize[1],
         0, 0, Instance, 0);
 
     if (!Window) {

@@ -111,7 +111,16 @@ namespace tetris {
     int rots[7] = { 2, 2, 2, 1, 4, 4, 4 };
     
 
-    const int blockWidth = 32;
+    const int blockWidth = 45;
+
+    int* getWindowSize(int arr[]) {
+       
+        arr[0] = blockWidth * 14;
+        arr[1] = blockWidth * 21;
+
+
+        return arr;
+    }
 
     struct color {
         int hex;
@@ -124,6 +133,7 @@ namespace tetris {
     };
 
     color colors[7] = {color(0x00ff00, 'I'), color(0xff0000, 'O'), color(0x00ffff, 'S'), color(0xffff00, 'Z'), color(0x800080, 'T'), color(0xff7f00, 'J'), color(0x0000ff, 'L')};
+    color bgColor = color(0x2B2B2B, ' ');
 
     color getColor(char c) {
         for (int i = 0; i < 7; i++) {
@@ -150,7 +160,7 @@ namespace tetris {
         grid() {
             makeMatrix();
             this->x = 0;
-            this->y = 5;
+            this->y = 0;
         }
 
         bool isInBounds(int x, int y) {
@@ -187,7 +197,7 @@ namespace tetris {
                 for (int x = 0; x < 10; x++) {
                     color c = getColor(matrix[y][x]);
                     if (c.label == ' ')
-                        c.hex = 0x7f7f7f;
+                        c.hex = bgColor.hex;
                     DrawRectangle((this->x + x) * blockWidth, (this->y + y) * blockWidth, blockWidth, blockWidth, c.hex);
                 }
             }
@@ -203,9 +213,10 @@ namespace tetris {
                     }
                 }
                 if (full) {
-                    matrix[i] = "";
-                    for (int j = i; j < 19; j++) {
-                        matrix[j] = matrix[j + 1];
+                    matrix[i] = str;
+
+                    for (int y = i; y > 0; y--) {
+                        this->matrix[y] = this->matrix[y - 1];
                     }
                 }
             }
@@ -237,6 +248,11 @@ namespace tetris {
             }
         }
 
+        void drop() {
+            while (this->move(0, 1))
+                continue;
+        }
+
         bool move(int x, int y) {
             int newx = x + this->x;
             int newy = y + this->y;
@@ -266,6 +282,7 @@ namespace tetris {
                     }
                 }
             }
+            g->checkLines();
         }
 
         void draw() {
@@ -282,36 +299,92 @@ namespace tetris {
                 }
             }
 
+            int ghostY = this->y;
+            bool done = false;
+            for (int y = this->y; y < 20; y++) {
+
+                for (int i = 0; i < 5; i++) {
+                    for (int j = 0; j < 5; j++) {
+                        if (shp[piece][rot][i][j] == '0') {
+                            int litX = j + this->x;
+                            int litY = i + y;
+
+                            if (!g->isInBounds(litX, litY)) {
+                                ghostY = y + i;
+                                done = true;
+                                break;
+                            }
+
+
+                        }
+                    }
+                    if (done)
+                        break;
+                }
+                if (done)
+                    break;
+            }
+
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 5; j++) {
+                    if (shp[piece][rot][i][j] == '0') {
+                        DrawRectangle((this->x + j) * blockWidth, (ghostY + i) * blockWidth, blockWidth, blockWidth, (colors[piece].hex * 0.2) + bgColor.hex);
+                    }
+                }
+            }
+
         }
 
 
     };
     
-    shape* s = new shape(5, 5, random(0, 6));
+    shape* s = new shape(2, -3, random(0, 6));
     
 
     void keyDown(char k) {
         if (k == 'W') {
             s->rotate();
         }
-        if (k == 'S')
-            s->move(0, 1);
+        
+        // 0x20 == spacebar
+        if (k == 0x20) {
+            s->drop();
+        }
 
-        if (k == 'D')
-            s->move(1, 0);
+    }
 
-        if (k == 'A')
-            s->move(-1, 0);
+    float shapeMoveTs = 0;
+    const float moveCooldown = 0.13f;
+    void doMovement() {
+        if (shapeMoveTs < getTime()) {
+            if (isKeyDown('D')) {
+                s->move(1, 0);
+                shapeMoveTs = getTime() + moveCooldown;
+            }
+
+            if (isKeyDown('A')) {
+                s->move(-1, 0);
+                shapeMoveTs = getTime() + moveCooldown;
+            }
+            if (isKeyDown('S')) {
+                s->move(0, 1);
+                shapeMoveTs = getTime() + moveCooldown / 2;
+            }
+        }
     }
 
     float gravityTs = 0;
     void update() {
         g->draw();
 
+
+        doMovement();
+
+
         if (gravityTs < getTime()) {
             if (!s->move(0, 1)){
                 s->placeShape();
-                s = new shape(5, 5, random(0, 6));
+                s = new shape(2, -3, random(0, 6));
             }
             gravityTs = getTime() + 0.4f;
         }
