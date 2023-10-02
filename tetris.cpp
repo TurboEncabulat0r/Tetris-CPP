@@ -374,7 +374,7 @@ namespace tetris {
     };
 
     void gameOver() {
-
+        std::cout << "Game Over!" << std::endl;
     }
     
     shape* s = new shape(2, -3, random(0, 6));
