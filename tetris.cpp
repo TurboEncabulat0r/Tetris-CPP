@@ -3,6 +3,10 @@
 #include <iostream>
 
 namespace tetris {
+
+    void getNewShape();
+    void gameOver();
+
     std::string shp[7][4][5] = { {{".....",
                            "..0..",
                            ".00..",
@@ -115,7 +119,7 @@ namespace tetris {
 
     int* getWindowSize(int arr[]) {
        
-        arr[0] = blockWidth * 14;
+        arr[0] = blockWidth * 15;
         arr[1] = blockWidth * 21;
 
 
@@ -124,12 +128,18 @@ namespace tetris {
 
     struct color {
         int hex;
+        int r;
+        int b;
+        int g;
         char label;
 
         color(int c, char l) {
             hex = c;
+            this->r = ((this->hex >> 16) & 0xFF) / 255.0;
+            this->g = ((this->hex >> 8) & 0xFF) / 255.0;
+            this->b = ((this->hex) & 0xFF) / 255.0;
             label = l;
-        }
+        } 
     };
 
     color colors[7] = {color(0x00ff00, 'I'), color(0xff0000, 'O'), color(0x00ffff, 'S'), color(0xffff00, 'Z'), color(0x800080, 'T'), color(0xff7f00, 'J'), color(0x0000ff, 'L')};
@@ -181,9 +191,13 @@ namespace tetris {
         void set(int x, int y, char c) {
             int ry = y - this->y;
             int rx = x - this->x;
-            if (ry > 20 || ry < 0 || rx < 0 || rx > 10)
-                std::cout << "x: " << rx << " y:" << ry << std::endl;
-            matrix[ry][rx] = c;
+
+            if (y < 0)
+                return;
+            if (isInBounds(x, y))
+                matrix[ry][rx] = c;
+            else if (ry < 0)
+                gameOver();
         }
 
         void makeMatrix() {
@@ -226,6 +240,7 @@ namespace tetris {
     };
     grid* g = new grid();
 
+
     class shape : public object {
     public:
         int piece = 4;
@@ -238,19 +253,51 @@ namespace tetris {
             this->rot = 0;
         }
 
+        shape(shape* s) {
+            this->x = s->x;
+            this->y = s->y;
+            this->piece = s->piece;
+            this->rot = s->rot;
+        }
+
+        ~shape() {
+
+        }
+
+        void copy(shape* shape) {
+            this->x = shape->x;
+            this->y = shape->y;
+            this->piece = shape->piece;
+            this->rot = shape->rot;
+        }
+
         void rotate() {
             this->rot--;
             if (this->rot < 0)
             {
-
                 this->rot = rots[piece] - 1;
                 
+            }
+
+            int newx = this->x;
+            int newy = this->y;
+
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 5; j++) {
+                    if (shp[piece][rot][i][j] == '0') {
+
+                        if (!g->isInBounds(newx + j, newy + i))
+                            this->rot = rots[piece] - 1;
+                    }
+                }
             }
         }
 
         void drop() {
             while (this->move(0, 1))
                 continue;
+
+            this->placeShape();
         }
 
         bool move(int x, int y) {
@@ -282,6 +329,7 @@ namespace tetris {
                     }
                 }
             }
+            getNewShape();
             g->checkLines();
         }
 
@@ -299,47 +347,69 @@ namespace tetris {
                 }
             }
 
-            int ghostY = this->y;
-            bool done = false;
-            for (int y = this->y; y < 20; y++) {
-
-                for (int i = 0; i < 5; i++) {
-                    for (int j = 0; j < 5; j++) {
-                        if (shp[piece][rot][i][j] == '0') {
-                            int litX = j + this->x;
-                            int litY = i + y;
-
-                            if (!g->isInBounds(litX, litY)) {
-                                ghostY = y + i;
-                                done = true;
-                                break;
-                            }
+        }
 
 
-                        }
-                    }
-                    if (done)
-                        break;
-                }
-                if (done)
-                    break;
-            }
+
+        void drawGhost() {
+            while (this->move(0, 1))
+                continue;
+
 
             for (int i = 0; i < 5; i++) {
                 for (int j = 0; j < 5; j++) {
-                    if (shp[piece][rot][i][j] == '0') {
-                        DrawRectangle((this->x + j) * blockWidth, (ghostY + i) * blockWidth, blockWidth, blockWidth, (colors[piece].hex * 0.2) + bgColor.hex);
+                    try {
+                        if (shp[piece][rot][i][j] == '0') {
+                            DrawRectangle((x + j) * blockWidth, (y + i) * blockWidth, blockWidth, blockWidth, (u32)(colors[piece].hex * 0.4) + bgColor.hex);
+                        }
+                    }
+                    catch (std::exception) {
+                        this->rot = 0;
                     }
                 }
             }
-
         }
 
 
     };
+
+    void gameOver() {
+        std::cout << "Game Over!" << std::endl;
+    }
     
     shape* s = new shape(2, -3, random(0, 6));
-    
+    shape* held = NULL;
+    shape* next = new shape(10, 1, random(0, 6));
+    shape* ghost = new shape(2, -3, 0);
+    void getNewShape() {
+        s->copy(next);
+        s->x = 2;
+        s->y = -3;
+        delete next;
+        next = new shape(10, 1, random(0, 6));
+
+    }
+
+    void hold() {
+        if (held == NULL) {
+            held = new shape(0, 0, 0);
+            held->copy(s);
+            held->x = 10;
+            held->y = 6;
+            getNewShape();
+            return;
+        }
+        shape* temp = new shape(0, 0, 0);
+        temp->copy(held);
+        held->copy(s);
+        held->x = 10;
+        held->y = 6;
+
+        s->copy(temp);
+        s->x = 2;
+        s->y = -3;
+        delete temp;
+    }
 
     void keyDown(char k) {
         if (k == 'W') {
@@ -350,8 +420,14 @@ namespace tetris {
         if (k == 0x20) {
             s->drop();
         }
-
+        
+        // shift
+        if (k == 0x10) {
+            hold();
+        }
     }
+
+
 
     float shapeMoveTs = 0;
     const float moveCooldown = 0.13f;
@@ -375,20 +451,22 @@ namespace tetris {
 
     float gravityTs = 0;
     void update() {
-        g->draw();
-
-
         doMovement();
-
 
         if (gravityTs < getTime()) {
             if (!s->move(0, 1)){
                 s->placeShape();
-                s = new shape(2, -3, random(0, 6));
             }
             gravityTs = getTime() + 0.4f;
         }
         
+        g->draw();
+        ghost->copy(s);
+        ghost->drawGhost();
+        next->draw();
+
+        if (held != NULL)
+            held->draw();
         s->draw();
 
     }
