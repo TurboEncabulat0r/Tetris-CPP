@@ -1,5 +1,6 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
+#define UNICODE
 #include <windows.h>
 #include <stdint.h>
 #include <chrono>
