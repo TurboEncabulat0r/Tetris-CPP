@@ -1,4 +1,7 @@
-# Vex-bot Tetris C++
+# Tetris in C++
 
-This is some terrible code that i wrote at school for vex-bots.
-keeping it public to motovate me to write better code.
+This is some godawful code I wrote at school for fun.
+leaving it public to motivate me to write better code.
+
+## Building
+- good luck
